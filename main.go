@@ -119,7 +119,11 @@ func printInner(n ast.Node) bool {
 			if rename != "" {
 				fmt.Printf("    #[serde(rename=\"%s\")]\n", rename)
 			}
-			fmt.Printf("    pub %s: %s,\n", ToSnakeCase(name), rusttype)
+			name = ToSnakeCase(name)
+			if name == "type" {
+				name = "kind"
+			}
+			fmt.Printf("    pub %s: %s,\n", name, rusttype)
 		}
 	default:
 		return false
