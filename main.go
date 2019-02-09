@@ -76,6 +76,8 @@ func go2rusttype(n ast.Node) string {
 		keytype := go2rusttype(r.Key)
 		valtype := go2rusttype(r.Value)
 		return fmt.Sprintf("HashMap<%s, %s>", keytype, valtype)
+	case *ast.StructType:
+		return "HashMap<String, String>"
 	default:
 		// nested structs are left
 		// type Blah struct {
@@ -126,13 +128,15 @@ func printInner(n ast.Node) bool {
 func main() {
 	fname := os.Args[1] + ".go"
 	fset := token.NewFileSet()
-	f, err := parser.ParseFile(fset, fname, nil, 0)
+	f, err := parser.ParseFile(fset, fname, nil, parser.ParseComments)
 	if err != nil {
 		println("Unable to parse:" + err.Error())
 		return
 	}
 	ast.Inspect(f, func(n ast.Node) bool {
 		switch v := n.(type) {
+		case *ast.Comment:
+			fmt.Println(v.Text)
 		case *ast.TypeSpec:
 			fmt.Println("#[derive(Serialize, Deserialize, Debug, Copy, Clone)]")
 			fmt.Println("pub struct", v.Name.Name, "{")
