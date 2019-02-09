@@ -53,6 +53,8 @@ func go2rusttype(n ast.Node) string {
 			return "String"
 		case "int":
 			return "i64"
+		case "int64":
+			return "i64"
 		default:
 			return r.Name
 		}
