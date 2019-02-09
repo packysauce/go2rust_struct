@@ -72,6 +72,10 @@ func go2rusttype(n ast.Node) string {
 		return go2rusttype(r.X)
 	case *ast.SelectorExpr:
 		return fmt.Sprintf("%s::%s", go2rusttype(r.X), r.Sel.Name)
+	case *ast.MapType:
+		keytype := go2rusttype(r.Key)
+		valtype := go2rusttype(r.Value)
+		return fmt.Sprintf("HashMap<%s, %s>", keytype, valtype)
 	default:
 		return fmt.Sprintf("FUCK YOU, %s", reflect.TypeOf(r))
 	}
@@ -83,21 +87,7 @@ func printInner(n ast.Node) bool {
 	switch v := n.(type) {
 	case *ast.StructType:
 		for _, el := range v.Fields.List {
-			var rusttype string
-			switch r := el.Type.(type) {
-			case *ast.Ident:
-				rusttype = go2rusttype(r)
-			case *ast.MapType:
-				keytype := go2rusttype(r.Key)
-				valtype := go2rusttype(r.Value)
-				rusttype = fmt.Sprintf("HashMap<%s, %s>", keytype, valtype)
-			case *ast.ArrayType:
-				rusttype = fmt.Sprintf("Vec<%s>", go2rusttype(r.Elt))
-			case *ast.StarExpr:
-				rusttype = go2rusttype(r.X)
-			default:
-				rusttype = "<unknown>"
-			}
+			rusttype := go2rusttype(el.Type)
 			rename, optional := parseTag(el.Tag)
 			name := ToSnakeCase(rusttype)
 			needsFlatten := false
