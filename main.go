@@ -77,6 +77,12 @@ func go2rusttype(n ast.Node) string {
 		valtype := go2rusttype(r.Value)
 		return fmt.Sprintf("HashMap<%s, %s>", keytype, valtype)
 	default:
+		// nested structs are left
+		// type Blah struct {
+		//	 HostConfig struct {
+		//     NetworkMode string `json:",omitempty"`
+		// 	 }
+		// }
 		return fmt.Sprintf("FUCK YOU, %s", reflect.TypeOf(r))
 	}
 
