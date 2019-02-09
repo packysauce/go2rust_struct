@@ -141,7 +141,7 @@ func main() {
 		case *ast.Comment:
 			fmt.Println(v.Text)
 		case *ast.TypeSpec:
-			fmt.Println("#[derive(Serialize, Deserialize, Debug, Copy, Clone)]")
+			fmt.Println("#[derive(Serialize, Deserialize, Debug, Clone)]")
 			fmt.Println("pub struct", v.Name.Name, "{")
 			ast.Inspect(v.Type, printInner)
 			fmt.Println("}\n\n")
