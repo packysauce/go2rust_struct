@@ -115,7 +115,7 @@ func printInner(n ast.Node) bool {
 				fmt.Printf("    #[serde(flatten)]\n")
 			}
 			if rename != "" {
-				fmt.Printf("    #[serde(rename=%s)]\n", rename)
+				fmt.Printf("    #[serde(rename=\"%s\")]\n", rename)
 			}
 			fmt.Printf("    pub %s: %s,\n", ToSnakeCase(name), rusttype)
 		}
@@ -133,6 +133,9 @@ func main() {
 		println("Unable to parse:" + err.Error())
 		return
 	}
+	fmt.Println("use serde;")
+	fmt.Println("use serde_derive::{Serialize, Deserialize};")
+	fmt.Print("\n\n")
 	ast.Inspect(f, func(n ast.Node) bool {
 		switch v := n.(type) {
 		case *ast.Comment:
