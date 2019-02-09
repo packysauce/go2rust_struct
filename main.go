@@ -6,7 +6,9 @@ import (
 	"go/parser"
 	"go/token"
 	"os"
+	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -41,6 +43,10 @@ func parseTag(v *ast.BasicLit) (string, bool) {
 
 func go2rusttype(n ast.Node) string {
 	switch r := n.(type) {
+	case *ast.BasicLit:
+		if r.Kind == token.INT {
+			return r.Value
+		}
 	case *ast.Ident:
 		switch r.Name {
 		case "string":
@@ -50,10 +56,27 @@ func go2rusttype(n ast.Node) string {
 		default:
 			return r.Name
 		}
+	case *ast.ArrayType:
+		if r.Len != nil {
+			// tuple
+			n, _ := strconv.ParseInt(go2rusttype(r.Len), 10, 64)
+			// fuck errors
+			what := fmt.Sprintf("%s, ", go2rusttype(r.Elt))
+			repeated := strings.Repeat(what, int(n))
+			return fmt.Sprintf("(%s)", strings.TrimRight(repeated, ", "))
+		} else {
+			// slice
+			return fmt.Sprintf("Vec<%s>", go2rusttype(r.Elt))
+		}
 	case *ast.StarExpr:
 		return go2rusttype(r.X)
+	case *ast.SelectorExpr:
+		return fmt.Sprintf("%s::%s", go2rusttype(r.X), r.Sel.Name)
+	default:
+		return fmt.Sprintf("FUCK YOU, %s", reflect.TypeOf(r))
 	}
-	return "fuck you we made it right here"
+
+	return "OH BOY WE SCREWED THE POOCH HERE"
 }
 
 func printInner(n ast.Node) bool {
@@ -84,6 +107,7 @@ func printInner(n ast.Node) bool {
 					rename = el.Names[0].Name
 				}
 			} else {
+				rename = rusttype
 				needsFlatten = true
 			}
 			if optional {
@@ -91,7 +115,8 @@ func printInner(n ast.Node) bool {
 			}
 			if needsFlatten {
 				fmt.Printf("    #[serde(flatten)]\n")
-			} else {
+			}
+			if rename != "" {
 				fmt.Printf("    #[serde(rename=%s)]\n", rename)
 			}
 			fmt.Printf("    pub %s: %s,\n", ToSnakeCase(name), rusttype)
