@@ -76,14 +76,24 @@ func printInner(n ast.Node) bool {
 				rusttype = "<unknown>"
 			}
 			rename, optional := parseTag(el.Tag)
-			name := ToSnakeCase(el.Names[0].Name)
-			if len(rename) == 0 {
-				rename = el.Names[0].Name
+			name := ToSnakeCase(rusttype)
+			needsFlatten := false
+			if len(el.Names) > 0 {
+				name = ToSnakeCase(el.Names[0].Name)
+				if len(rename) == 0 {
+					rename = el.Names[0].Name
+				}
+			} else {
+				needsFlatten = true
 			}
 			if optional {
 				rusttype = fmt.Sprintf("Option<%s>", rusttype)
 			}
-			fmt.Printf("    #[serde(rename=%s)]\n", rename)
+			if needsFlatten {
+				fmt.Printf("    #[serde(flatten)]\n")
+			} else {
+				fmt.Printf("    #[serde(rename=%s)]\n", rename)
+			}
 			fmt.Printf("    pub %s: %s,\n", ToSnakeCase(name), rusttype)
 		}
 	default:
