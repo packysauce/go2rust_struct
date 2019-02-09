@@ -10,13 +10,33 @@ import (
 	"strings"
 )
 
-var matchFirstCap = regexp.MustCompile("(.)([A-Z][a-z]+)")
+var matchFirstCap = regexp.MustCompile("(.)([A-Z]([a-z])+)")
 var matchAllCap = regexp.MustCompile("([a-z0-9])([A-Z])")
+var pullTag = regexp.MustCompile("`json:\"(?P<name>[^,]*)(?P<option>,omitempty)?\"`")
 
 func ToSnakeCase(str string) string {
 	snake := matchFirstCap.ReplaceAllString(str, "${1}_${2}")
 	snake = matchAllCap.ReplaceAllString(snake, "${1}_${2}")
-	return strings.ToLower(snake)
+	return strings.Replace(strings.ToLower(snake), "i_p", "ip", -1)
+}
+
+func parseTag(v *ast.BasicLit) (string, bool) {
+	if v == nil {
+		return "", false
+	}
+	rename := ""
+	optional := false
+	match := pullTag.FindStringSubmatch(v.Value)
+	for i, name := range pullTag.SubexpNames() {
+		if name == "name" && string(match[i]) != "" {
+			rename = string(match[i])
+		}
+		if name == "option" && string(match[i]) == ",omitempty" {
+			optional = true
+		}
+	}
+
+	return rename, optional
 }
 
 func go2rusttype(n ast.Node) string {
@@ -55,8 +75,15 @@ func printInner(n ast.Node) bool {
 			default:
 				rusttype = "<unknown>"
 			}
-			name := el.Names[0].Name
-			fmt.Printf("    #[serde(rename=%s)]\n", name)
+			rename, optional := parseTag(el.Tag)
+			name := ToSnakeCase(el.Names[0].Name)
+			if len(rename) == 0 {
+				rename = el.Names[0].Name
+			}
+			if optional {
+				rusttype = fmt.Sprintf("Option<%s>", rusttype)
+			}
+			fmt.Printf("    #[serde(rename=%s)]\n", rename)
 			fmt.Printf("    pub %s: %s,\n", ToSnakeCase(name), rusttype)
 		}
 	default:
