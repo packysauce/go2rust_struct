@@ -141,6 +141,7 @@ func main() {
 		println("Unable to parse:" + err.Error())
 		return
 	}
+	fmt.Println("// GENERATED! DO NOT MANGLE. source:", fname)
 	fmt.Println("use serde;")
 	fmt.Println("use serde_derive::{Serialize, Deserialize};")
 	fmt.Print("\n\n")
